@@ -365,3 +365,23 @@ exist.
 **Correct approach**: render a compact, message-aligned execution summary immediately
 above the projected message content. The summary opens the associated Isolation Thread
 and reports meaningful progress/step information rather than a generic panel command.
+
+## Portal thread must preserve the delegated Agent's complete surface contract
+
+**Wrong approach**: Re-enable continuation in an Isolation Thread with a generic compact composer and keep a generic thread icon in the header.
+
+**Why**: A thread delegated to a heterogeneous Agent is an independent conversation owned by that Agent. Its composer carries execution-target, device, working-directory, model, credential, and capability guards that a generic composer does not provide; a generic icon also hides whose conversation is open.
+
+**What it breaks**: Follow-up turns can be dispatched with the wrong or incomplete execution configuration, while the panel lacks the identity cues users need to understand the thread as a distinct Agent conversation.
+
+**Correct approach**: Resolve the thread's `agentId`, render that Agent type's canonical input surface, and show the Agent avatar in the expanded thread header. Keep externally tool-owned subagent records read-only.
+
+## Persistent execution entry should describe the action, not transient runtime state
+
+**Wrong approach**: Label a persistent disclosure entry with `Working...` while an execution is active and style it like a status indicator.
+
+**Why**: The entry remains after completion and its real contract is navigation to the complete execution record. A transient status label is unstable and competes with the existing runtime feedback.
+
+**What it breaks**: Users mistake a durable disclosure affordance for a live status badge, and the color no longer matches sibling collapsed-detail UI.
+
+**Correct approach**: Use stable action copy such as “View full record” for every lifecycle state and style it with the same neutral gray fill/text treatment as collapsed detail surfaces.
