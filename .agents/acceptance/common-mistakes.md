@@ -395,3 +395,13 @@ and reports meaningful progress/step information rather than a generic panel com
 **What it breaks**: Every delegated run looks identical and users lose the at-a-glance distinction between a direct response and a multi-step tool execution.
 
 **Correct approach**: Keep the neutral gray collapsed-detail styling and always render a stable counted summary such as “Executed N steps”. Before totals settle, show the minimum known execution unit rather than a transient “Working” label; update the count when metadata settles.
+
+### Correction: step count and explicit record action are cumulative requirements
+
+**Wrong approach**: Treat “Executed N steps” and “Click to view full record” as competing labels, or approximate the MessageGroup fold appearance with a custom text button.
+
+**Why**: The reviewed design requires both information and action: the count explains what happened, while the explicit phrase explains what clicking does. The visual reference is the canonical MessageGroup `ProcessFold`, not an inferred gray token combination.
+
+**What it breaks**: Omitting either phrase loses meaning, while custom button chrome drifts from the exact fold row the reviewer named.
+
+**Correct approach**: Render a combined label such as “Executed N steps · View full record” and compose the same borderless `Accordion` / `AccordionItem` chrome used by `AssistantGroup/components/ProcessFold`; route its expand intent to the associated Thread portal.
