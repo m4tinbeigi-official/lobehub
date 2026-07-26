@@ -149,6 +149,70 @@ localhost callback state is commonly unusable.
 server-minted dev session. If neither exists, report one manual sign-in as blocked;
 never open the flow for the user.
 
+---
+
+## Cross-agent dispatch envelopes are not visible user turns
+
+**Wrong approach**: treat every persisted `role: user` row as a user-authored
+message when building the visible conversation list.
+
+**Why it's wrong**: `callAgent` persists a synthetic user envelope beneath the
+caller assistant so the target Agent has an isolated execution context. When
+that envelope is rendered, the original prompt appears twice even though the
+target Agent produced only one reply.
+
+**What it breaks**: users see a duplicate prompt bubble and cannot tell whether
+the delegation ran once or twice; acceptance screenshots become misleading.
+
+**Correct approach**: stamp synthetic envelopes with explicit dispatch metadata
+when they are persisted, keep them in the context tree, and let the presentation
+layer hide only rows declared `visibility: internal`. Continue traversal through
+the envelope so the target assistant reply remains independently visible.
+Never infer authorship from agent-id differences or a parent tool call: a real
+cross-Agent user follow-up can have the same tree shape.
+
+## A terminal Claude Code reply is not evidence of live streaming
+
+**Wrong approach**: ask a device-executed Claude Code agent for a one-token fixed
+marker, record until the process exits, and treat the eventual assistant text or
+a refreshed screenshot as proof that the reply streamed into the open Topic.
+
+**Why it's wrong**: `lh hetero exec` can run Claude Code without
+`--include-partial-messages`. In that mode the adapter receives only the final
+assistant snapshot, so the UI may show an empty target-Agent shell for the whole
+run and acquire the text only during terminal reconciliation. A short fixed
+marker also has no observable intermediate state even when partial framing works.
+
+**What it breaks**: the acceptance proves persistence and refresh recovery but
+does not prove the user sees the answer arrive live; a GIF of an empty shell is
+mistaken for streaming evidence.
+
+**Correct approach**: enable Claude Code partial messages on the device/sandbox
+CLI spawn path. Verify with a multi-part response and timestamped DOM/store
+samples before any reload, then attach a GIF whose frames visibly progress and
+whose final frame contains the complete answer. Check persistence separately by
+refreshing only after the live-stream assertion has passed.
+
+## A text-only direct mention does not prove tool-call ownership
+
+**Wrong approach**: verify a leading single-Agent mention only with a plain-text
+response, then conclude that the direct-routing message tree is correct for all
+target-Agent runs.
+
+**Why it's wrong**: tool-capable runs add assistant tool-call chunks and
+tool-result messages. Those nodes can accidentally inherit the owner Agent,
+create a synthetic target-user envelope, or resume the owner after the tool
+result even when the initial text response looked correct.
+
+**What it breaks**: the simple happy path passes while real coding Agents either
+lose their tool output, render it under the wrong Agent, or invoke Lobe AI for
+the final answer.
+
+**Correct approach**: exercise a deterministic real tool call through the same
+gateway/device route, then assert the complete persisted tree: original owner
+user, target assistant/tool call, tool result, and target final response. Also
+assert there is no owner assistant, `callAgent`, or synthetic target-user row.
+
 ## Historical source
 
 [The original field notes](./references/common-mistakes-field-notes.md) retain the
@@ -263,3 +327,24 @@ full incident narratives and old Case numbers for earlier cross-references.
 **What it breaks**: evidence appears to show an unexplained 6→7 mutation and two different goals, and a legitimate seventh cross-round check can be incorrectly hidden.
 
 **Correct approach**: capture definition and result states from the same Task, keep the full Acceptance check union visible, and keep the Task verify requirement synchronized with the aggregate goal.
+
+## A functional cross-agent projection still needs message-native visual hierarchy
+
+**Wrong approach**: place a projected Agent's execution-detail action in the chat
+item's full-width `aboveMessage` slot and accept a screenshot because the avatar,
+reply, and button are technically present.
+
+**Why it's wrong**: the full-width slot lets a small text action float away from
+the reply it describes. The control can become the visual center of the message
+while the actual answer sits elsewhere, so a correct data path reads as a broken
+conversation.
+
+**What it breaks**: reviewers cannot scan prompt → responding Agent → answer as one
+message unit, and evidence polluted by onboarding overlays or developer chrome
+obscures whether the production hierarchy is actually sound.
+
+**Correct approach**: keep the final answer as the primary content, place a compact
+secondary execution-detail action directly after it inside the same message content
+column, and capture a clean production-shaped viewport with onboarding overlays and
+developer docks dismissed. Verify hierarchy and alignment visually, not only through
+DOM text or persistence probes.

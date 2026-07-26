@@ -1316,6 +1316,8 @@ export class AiAgentService {
     // fall back to the executing agent. Tools / systemRole / skills / agent
     // documents stay keyed on `resolvedAgentId`.
     const persistAgentId = appContext?.agentSignal?.agentId ?? resolvedAgentId;
+    const conversationAgentId = appContext?.conversationAgentId ?? persistAgentId;
+    const assistantAgentId = appContext?.conversationAgentId ? resolvedAgentId : persistAgentId;
 
     // Resolve the final model once, keeping per-call task / sub-agent overrides
     // above the caller's personal workspace choice and the shared Agent default.
@@ -1682,7 +1684,7 @@ export class AiAgentService {
 
       const fallbackTitleSource = markdownToTxt(prompt);
       const newTopic = await this.topicModel.create({
-        agentId: resolvedAgentId,
+        agentId: conversationAgentId,
         // Persist the group association when running inside a group conversation.
         // Without it the topic is created group-less and only shows under the
         // member agent's topic list — never in the group sidebar (which queries
@@ -1769,10 +1771,14 @@ export class AiAgentService {
     // consume the same records. Keeping it in one place is what guarantees the
     // hetero path can't drift from the standard path again (the bot-image bug
     // came from the hetero branch re-implementing — and skipping — this step).
-    const requestTriggerMetadata =
-      trigger && Object.values(RequestTrigger).includes(trigger as RequestTrigger)
+    const requestTriggerMetadata = {
+      ...(trigger && Object.values(RequestTrigger).includes(trigger as RequestTrigger)
         ? { trigger: trigger as RequestTrigger }
-        : undefined;
+        : undefined),
+      ...(appContext?.conversationAgentId && appContext.scope === 'sub_agent'
+        ? { agentDispatch: { kind: 'callAgent' as const, visibility: 'internal' as const } }
+        : undefined),
+    };
 
     // Attachment ingestion: raw bot/IM `files` → S3, pre-uploaded
     // `attachedFileIds` → signed URLs + classification.
@@ -1819,14 +1825,15 @@ export class AiAgentService {
     const userMessageRecord = runFromHistory
       ? undefined
       : await this.messageModel.create({
-          agentId: persistAgentId,
+          agentId: conversationAgentId,
           content: prompt,
           files: runAttachments.fileIds,
           // Group reads filter on messages.groupId (MessageModel.query group
           // branch), so a group turn must stamp groupId or the message never
           // shows when the topic is reopened (group topic sidebar + ownership fix).
           groupId: appContext?.groupId ?? undefined,
-          metadata: requestTriggerMetadata,
+          metadata:
+            Object.keys(requestTriggerMetadata).length > 0 ? requestTriggerMetadata : undefined,
           parentId: userMessageParentId,
           role: 'user',
           threadId: appContext?.threadId ?? undefined,
@@ -1856,7 +1863,7 @@ export class AiAgentService {
     // seeding the agent's chat model would leak it into the model tag. A normal
     // run seeds model + provider as usual.
     const assistantMessageRecord = await this.messageModel.create({
-      agentId: persistAgentId,
+      agentId: assistantAgentId,
       content: LOADING_FLAT,
       // Stamp groupId so the assistant turn is visible in the group read path
       // (MessageModel.query filters group chats by messages.groupId).
