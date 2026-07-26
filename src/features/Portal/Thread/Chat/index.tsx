@@ -1,6 +1,5 @@
 'use client';
 
-import { ThreadType } from '@lobechat/types';
 import { Flexbox } from '@lobehub/ui';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 
@@ -32,10 +31,10 @@ import { useThreadActionsBarConfig } from './useThreadActionsBarConfig';
  * Must be inside ConversationProvider to access the store
  */
 interface ThreadChatContentProps {
-  isSubagentThread: boolean;
+  isExternallyOwnedThread: boolean;
 }
 
-const ThreadChatContent = memo<ThreadChatContentProps>(({ isSubagentThread }) => {
+const ThreadChatContent = memo<ThreadChatContentProps>(({ isExternallyOwnedThread }) => {
   // Get display messages from ConversationStore to determine thread divider position
   // With the new backend API, parent messages have threadId === null
   // and thread messages have threadId === context.threadId
@@ -71,14 +70,18 @@ const ThreadChatContent = memo<ThreadChatContentProps>(({ isSubagentThread }) =>
       return (
         <MessageItem
           inPortalThread
-          disableEditing={isSubagentThread || isParentMessage}
+          disableEditing={isExternallyOwnedThread || isParentMessage}
           endRender={enableThreadDivider ? <ThreadDivider /> : undefined}
           id={id}
           index={index}
         />
       );
     },
-    [threadSourceInfo.sourceMessageId, threadSourceInfo.sourceMessageIndex, isSubagentThread],
+    [
+      threadSourceInfo.sourceMessageId,
+      threadSourceInfo.sourceMessageIndex,
+      isExternallyOwnedThread,
+    ],
   );
 
   return (
@@ -102,7 +105,9 @@ const ThreadChatContent = memo<ThreadChatContentProps>(({ isSubagentThread }) =>
           <ChatList itemContent={itemContent} />
         </Flexbox>
       </Suspense>
-      {!isSubagentThread && <ChatInput leftActions={['typo']} rightActions={['contextWindow']} />}
+      {!isExternallyOwnedThread && (
+        <ChatInput leftActions={['typo']} rightActions={['contextWindow']} />
+      )}
     </>
   );
 });
@@ -134,15 +139,14 @@ const ThreadChat = memo(() => {
   // read-only record (hides composer, wipes per-message actions, disables
   // double-click editing).
   const portalThread = useChatStore(portalThreadSelectors.portalCurrentThread);
-  const isSubagentThread =
-    portalThread?.type === ThreadType.Isolation || !!portalThread?.metadata?.sourceToolCallId;
+  const isExternallyOwnedThread = !!portalThread?.metadata?.sourceToolCallId;
   // Isolation execution may be owned by an Agent other than the topic owner.
   // Fetch and render the Thread with that Agent's scope while leaving the
   // projected source message in the main conversation's scope.
   const threadAgentId = portalThread?.agentId || activeAgentId;
 
   // Get thread-specific actionsBar config
-  const actionsBarConfig = useThreadActionsBarConfig({ readonly: isSubagentThread });
+  const actionsBarConfig = useThreadActionsBarConfig({ readonly: isExternallyOwnedThread });
 
   // Build ConversationContext for thread
   // When creating new thread (!portalThreadId), use isNew + scope: 'thread'
@@ -247,7 +251,7 @@ const ThreadChat = memo(() => {
         replaceMessages(msgs, { context: ctx });
       }}
     >
-      <ThreadChatContent isSubagentThread={isSubagentThread} />
+      <ThreadChatContent isExternallyOwnedThread={isExternallyOwnedThread} />
     </ConversationProvider>
   );
 });

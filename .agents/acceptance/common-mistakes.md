@@ -348,3 +348,20 @@ secondary execution-detail action directly after it inside the same message cont
 column, and capture a clean production-shaped viewport with onboarding overlays and
 developer docks dismissed. Verify hierarchy and alignment visually, not only through
 DOM text or persistence probes.
+
+## A projected Agent reply uses the execution summary as its preface
+
+**Wrong approach**: move the execution-detail affordance below the projected answer
+because a generic chat hierarchy usually puts secondary actions after content.
+
+**Why it's wrong**: this surface's reviewed contract is process-first: the compact
+“ran N steps” summary introduces the delegated execution, and the answer follows as
+its result. A generic hierarchy heuristic cannot override that explicit placement.
+
+**What it breaks**: the reply no longer reads like the completion of a visible Agent
+run, and the reviewer has to scan past the result to discover that execution details
+exist.
+
+**Correct approach**: render a compact, message-aligned execution summary immediately
+above the projected message content. The summary opens the associated Isolation Thread
+and reports meaningful progress/step information rather than a generic panel command.
