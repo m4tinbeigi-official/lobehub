@@ -385,3 +385,13 @@ and reports meaningful progress/step information rather than a generic panel com
 **What it breaks**: Users mistake a durable disclosure affordance for a live status badge, and the color no longer matches sibling collapsed-detail UI.
 
 **Correct approach**: Use stable action copy such as “View full record” for every lifecycle state and style it with the same neutral gray fill/text treatment as collapsed detail surfaces.
+
+### Correction: the stable action must retain meaningful execution progress
+
+**Wrong approach**: Interpret “do not show processing” as permission to replace the execution summary with a generic “View full record” label.
+
+**Why**: The reviewer rejected the transient status wording, not the step-count information. The compact summary's product value is telling users how much execution occurred before they decide whether to expand it.
+
+**What it breaks**: Every delegated run looks identical and users lose the at-a-glance distinction between a direct response and a multi-step tool execution.
+
+**Correct approach**: Keep the neutral gray collapsed-detail styling and always render a stable counted summary such as “Executed N steps”. Before totals settle, show the minimum known execution unit rather than a transient “Working” label; update the count when metadata settles.
