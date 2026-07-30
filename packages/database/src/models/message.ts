@@ -154,10 +154,36 @@ interface MessageRelatedFile {
   fileType: string | null;
   id: string;
   messageId: string;
+  metadata: unknown;
   name: string | null;
   size: number | null;
   url: string;
 }
+
+const getChatAudioMetadata = ({
+  fileType,
+  metadata,
+}: Pick<MessageRelatedFile, 'fileType' | 'metadata'>): Pick<
+  ChatAudioItem,
+  'codec' | 'durationMs' | 'mimeType'
+> => {
+  const value =
+    metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : {};
+
+  return {
+    ...(typeof value.codec === 'string' ? { codec: value.codec } : undefined),
+    ...(typeof value.durationMs === 'number' && Number.isFinite(value.durationMs)
+      ? { durationMs: value.durationMs }
+      : undefined),
+    ...(typeof value.mimeType === 'string'
+      ? { mimeType: value.mimeType }
+      : fileType
+        ? { mimeType: fileType }
+        : undefined),
+  };
+};
 
 interface MessageChunkRelation {
   fileId: string;
@@ -871,7 +897,12 @@ export class MessageModel {
               audioList: audioList
                 .filter((relation) => relation.messageId === item.id)
 
-                .map<ChatAudioItem>(({ id, url, name }) => ({ alt: name!, id, url })),
+                .map<ChatAudioItem>((file) => ({
+                  ...getChatAudioMetadata(file),
+                  alt: file.name!,
+                  id: file.id,
+                  url: file.url,
+                })),
             } as unknown as UIChatMessage;
           },
         ),
@@ -975,6 +1006,7 @@ export class MessageModel {
             fileType: files.fileType,
             id: messagesFiles.fileId,
             messageId: messagesFiles.messageId,
+            metadata: files.metadata,
             name: files.name,
             size: files.size,
             url: files.url,
@@ -1318,6 +1350,7 @@ export class MessageModel {
           fileType: files.fileType,
           id: messagesFiles.fileId,
           messageId: messagesFiles.messageId,
+          metadata: files.metadata,
           name: files.name,
           size: files.size,
           url: files.url,
@@ -1508,7 +1541,12 @@ export class MessageModel {
             .map<ChatVideoItem>(({ id, url, name }) => ({ alt: name!, id, url })),
           audioList: audioList
             .filter((relation) => relation.messageId === item.id)
-            .map<ChatAudioItem>(({ id, url, name }) => ({ alt: name!, id, url })),
+            .map<ChatAudioItem>((file) => ({
+              ...getChatAudioMetadata(file),
+              alt: file.name!,
+              id: file.id,
+              url: file.url,
+            })),
         } as unknown as UIChatMessage;
       },
     );

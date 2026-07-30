@@ -15,12 +15,7 @@ export interface FileUploadState {
 }
 
 export type FileUploadStatus =
-  | 'pending'
-  | 'uploading'
-  | 'processing'
-  | 'success'
-  | 'error'
-  | 'cancelled';
+  'pending' | 'uploading' | 'processing' | 'success' | 'error' | 'cancelled';
 
 export type FileProcessStatus = 'pending' | 'chunking' | 'embedding' | 'success' | 'error';
 
@@ -32,6 +27,16 @@ export interface UploadFileItem {
    * AbortController to cancel the upload
    */
   abortController?: AbortController;
+  /**
+   * Metadata captured by the voice-message recorder. Kept on the upload item so
+   * optimistic and queued messages can render duration/codec before the
+   * persisted file relation is fetched.
+   */
+  audioMetadata?: {
+    codec?: string;
+    durationMs: number;
+    mimeType: string;
+  };
   /**
    * base64 data, it will use in other data
    */

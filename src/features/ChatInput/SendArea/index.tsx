@@ -19,24 +19,27 @@ const SendArea = memo(() => {
   const { canShowControls } = useChatInputResourceAccess();
   const allowExpand = useChatInputStore((s) => s.allowExpand);
   const rightActions = useChatInputStore((s) => s.rightActions, isEqual);
+  const voiceMessageActive = useChatInputStore((s) => s.activeAudioInputMode === 'voiceMessage');
 
   const items = useMemo(
     () =>
       canShowControls
         ? mapActionsToItems(
-            ((rightActions as ActionKey[]) || []).filter(
-              (actionKey) => actionKey !== 'contextWindow',
-            ),
+            voiceMessageActive
+              ? (['voiceMessage'] as ActionKey[])
+              : ((rightActions as ActionKey[]) || []).filter(
+                  (actionKey) => actionKey !== 'contextWindow',
+                ),
           )
         : [],
-    [canShowControls, rightActions],
+    [canShowControls, rightActions, voiceMessageActive],
   );
 
   return (
     <Flexbox horizontal align={'center'} flex={'none'} gap={12}>
-      {canShowControls && allowExpand && <ExpandButton />}
+      {canShowControls && allowExpand && !voiceMessageActive && <ExpandButton />}
       {items}
-      <SendButton />
+      {!voiceMessageActive && <SendButton />}
     </Flexbox>
   );
 });
