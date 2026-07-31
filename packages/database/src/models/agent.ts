@@ -1793,7 +1793,9 @@ export class AgentModel {
       // rare by construction, so this stays cheap.
       await trx
         .update(messages)
-        .set(ownershipUpdate)
+        // Keep the original recency — a scope transfer does not make the
+        // content newer (same rationale as the agent/topic updates above).
+        .set({ ...ownershipUpdate, updatedAt: messages.updatedAt })
         .where(
           and(
             inArray(messages.agentId, agentIds),
