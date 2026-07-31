@@ -962,6 +962,32 @@ export const MessageManifest: BuiltinToolManifest = {
         type: 'object',
       },
     },
+    {
+      description:
+        "Proactively push a message to the CURRENT USER's own DM with the LobeHub System Bot — use this to notify the user on their linked chat platform (task finished, reminder, alert). Unlike `sendDirectMessage` it needs no bot discovery, channel id, or platform user id: the server resolves the user's own account link. Call `listMessengerLinks` first when unsure which platforms are linked. Telegram / Discord deliver immediately. Slack with several linked workspaces returns `needs_workspace_selection` — ask the user to pick, then retry with that `tenantId`. WeChat can only deliver inside the send window opened by the user's last inbound message; outside it the push is `queued` and you must tell the user to message the LobeHub WeChat bot first so the queued push gets delivered.",
+      name: MessageApiName.sendMessengerPush,
+      parameters: {
+        additionalProperties: false,
+        properties: {
+          content: {
+            description: 'Message content to deliver (plain text, max 2000 characters).',
+            type: 'string',
+          },
+          platform: {
+            description: 'Platform to push to — must be one the user has linked.',
+            enum: ['telegram', 'slack', 'discord', 'wechat'],
+            type: 'string',
+          },
+          tenantId: {
+            description:
+              'Slack-only: workspace (team) id when the user linked several workspaces. Omit elsewhere.',
+            type: 'string',
+          },
+        },
+        required: ['platform', 'content'],
+        type: 'object',
+      },
+    },
   ],
   identifier: MessageToolIdentifier,
   meta: {

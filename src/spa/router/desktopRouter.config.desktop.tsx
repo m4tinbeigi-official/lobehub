@@ -759,6 +759,8 @@ export const createMainAreaChildren = (): RouteObject[] => [
               { element: <WorkspaceSlugSettingsGeneralPage />, path: 'general' },
               { element: <WorkspaceSlugSettingsMembersPage />, path: 'members' },
               { element: <WorkspaceSlugSettingsNotificationPage />, path: 'notification' },
+              // Channel detail level of the two-level notification settings.
+              { element: <WorkspaceSlugSettingsNotificationPage />, path: 'notification/:sub' },
               { element: <WorkspaceSlugSettingsStatisticsPage />, path: 'statistics' },
               // Legacy `/:slug/settings/stats` URLs — kept for deep-links.
               { element: redirectElement('../statistics'), path: 'stats' },

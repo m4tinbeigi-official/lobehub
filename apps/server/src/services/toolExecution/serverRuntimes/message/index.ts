@@ -49,6 +49,7 @@ import { getBotRuntimeStatus } from '@/server/services/gateway/runtimeStatus';
 import { getMessengerRouter, messengerPlatformRegistry } from '@/server/services/messenger';
 import { TELEGRAM_INSTALLATION_KEY } from '@/server/services/messenger/installations/telegram';
 import { wechatInstallationKey } from '@/server/services/messenger/installations/wechat';
+import { sendMessengerPush } from '@/server/services/messenger/push';
 
 import type { ServerRuntimeRegistration } from '../types';
 import { MessageDispatcherService } from './MessageDispatcherService';
@@ -717,6 +718,23 @@ export const messageRuntime: ServerRuntimeRegistration = {
           return;
         }
         await linkModel.deleteByPlatform(params.platform, params.tenantId);
+      },
+
+      // Proactive push into the caller's own DM. The runtime already resolved
+      // Slack workspace ambiguity, so this is a straight pass-through to the
+      // platform-agnostic push entry (same one the settings UI test-push uses).
+      sendMessengerPush: async (params) => {
+        if (!context.userId || !context.serverDB) {
+          throw new Error('userId and serverDB are required to push messenger messages');
+        }
+        const result = await sendMessengerPush({
+          content: params.content,
+          platform: params.platform,
+          serverDB: context.serverDB,
+          tenantId: params.tenantId,
+          userId: context.userId,
+        });
+        return { remaining: result.remaining, status: result.status };
       },
     };
 

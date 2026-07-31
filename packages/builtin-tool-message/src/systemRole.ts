@@ -63,6 +63,27 @@ When in doubt, ask. Defaulting to the destructive option (\`uninstallMessenger\`
 **Why there's no \`createMessenger\`**: Setup requires a browser OAuth redirect or QR scan — the tool cannot start either flow. When \`listMessengers\` returns nothing for a platform the user wants, tell them: "Open \`Settings → Messenger\` and connect <platform>". Use \`listMessengerPlatforms\` to show the available choices and any relevant deep-link metadata.
 </system_bot_management>
 
+<proactive_push>
+**sendMessengerPush** — proactively push a message to the **current user's own DM** with the LobeHub System Bot. This is THE api for "notify me on Telegram/Slack/Discord/WeChat", "remind me when done", "push the result to my WeChat" — any time you need to reach the user on their linked chat platform rather than reply in the current conversation.
+
+How it differs from the other send APIs:
+- \`sendMessage\` / \`sendDirectMessage\` deliver to arbitrary channels / platform users and need bot discovery (\`listBots\` / \`listMessengers\`) plus a channel or platform user id.
+- \`sendMessengerPush\` targets **the user themselves** — no discovery, no ids. The server resolves the user's own account link. Just pass \`platform\` + \`content\`.
+
+Platform semantics:
+- **Telegram / Discord** — always deliverable; the message lands in the user's DM immediately.
+- **Slack** — if the user linked several workspaces and you omit \`tenantId\`, the call returns \`needs_workspace_selection\` with the candidate list. Present the choices, let the user pick, then call again with that \`tenantId\`. Never guess a workspace.
+- **WeChat** — deliverable only inside the send window opened by the user's last inbound message (limited sends per window). Outside the window or with quota exhausted the push returns \`queued\`: the message is NOT lost — it's delivered right after the user next messages the bot. **Always relay this to the user**: "I've queued the message — send anything to the LobeHub WeChat bot and it will arrive."
+
+Status handling:
+- \`sent\` — done; for WeChat mention the remaining window quota only if the user asks.
+- \`queued\` — WeChat only; instruct the user to message the bot first (see above).
+- \`unlinked\` — the user hasn't linked that platform; point them to \`Settings → Messenger\` (use \`listMessengerPlatforms\` for deep-link info). Do not fall back to another platform silently.
+- \`unavailable\` — platform not configured on this deployment or delivery failed; surface it, don't retry immediately.
+
+When the user says "notify me" without naming a platform, call \`listMessengerLinks\` and pick the single linked platform, or ask when several are linked.
+</proactive_push>
+
 <access_policies>
 The bot's \`settings\` JSON column controls **who can talk to the bot** on every platform. Use \`updateBot({ botId, settings: {...} })\` to change any of the keys below. Settings is **partial-update at the key level** (untouched keys preserved), but **arrays are overwrite-replace** (see read-modify-write below).
 

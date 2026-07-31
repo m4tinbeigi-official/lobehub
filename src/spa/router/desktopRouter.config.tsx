@@ -944,6 +944,15 @@ export const createMainAreaChildren = (): RouteObject[] => [
                 ),
                 path: 'notification',
               },
+              // Channel detail level of the two-level notification settings —
+              // the page reads the channel id from the `sub` route param.
+              {
+                element: dynamicElement(
+                  () => import('@/routes/(main)/[workspaceSlug]/settings/notification'),
+                  'Desktop > Workspace > Settings > Notification > Channel',
+                ),
+                path: 'notification/:sub',
+              },
               {
                 element: dynamicElement(
                   () => import('@/routes/(main)/[workspaceSlug]/settings/statistics'),
